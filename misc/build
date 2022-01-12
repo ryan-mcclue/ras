@@ -3,8 +3,8 @@
 
 mkdir -p build
 
-arm-none-eabi-as -g code/ras.s -o build/ras.o
-# NOTE(Ryan): Inspect .text address with '--verbose' 
-arm-none-eabi-ld -e entry build/ras.o -o build/ras.elf
+# IMPORTANT(Ryan): Must compile with gcc as oppose to as to use the cpp
+arm-none-eabi-gcc -ffreestanding -nostdlib -x assembler-with-cpp -Wl,-eentry -g \
+  code/ras.s -o build/ras.elf
 
 arm-none-eabi-objcopy build/ras.elf -O binary build/kernel7.img
