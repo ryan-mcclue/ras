@@ -22,17 +22,11 @@
 @ p15 is system control (cache, MMU), p14 is debug (breakpoint)
 @ generic coprocessor instruction like: MCR p10, 0, r1, cr2, 0 (p10 is single-precision coprocessor, p11 is double)
 @ or may have more informative like: FMSR s4, r1
+@ documentation often in the cortex-specific manual
 
-@ mrc p15, 0, r1, c0, c0, 0
-@ (op-code, co-processor lhs/rhs, optional extra info)
-@ 
-@ Command format ：MRC P15,0,R0,C0,C0,0, 
-@ Determined by the manufacturer: 30**～24**
-@ Product subnumber: 23**～20**
-@ ARM System version number: 19**～16**
-@ Product master number: 15**～4**
-@ Processor version number: 3**～0**
+@ SomePiGuy@gmail.com
 
+@ could update stack with: str! r0, sp, 4
 
 .global entry
 .global main
@@ -41,15 +35,61 @@
 
 #define SYSTEM_CONTROL_COPROCESSOR p15 
 
+.equ MMIO_BASE, 0x3F000000
+.equ GPIO_BASE, 0x200000
+.equ UART0_BASE, (GPIO_BASE + 0x1000)
+
 .section .text
 entry:
   @ NOTE(Ryan): Some registers have pre-declared names, e.g. r10 is sl (stack limit)
   ldr r10, =message
 main:
+  ldr r0, =MMIO_BASE
+  ldr r1, =GPIO_BASE
+  ldr r2, =UART0_BASE
+
+@ 677 - alphabetical list of instructions
+  mov r3, #0
+  @ NOTE(Ryan): UART0_CR - disable uart0
+  str r3, [r2, #0x30]
+
+  @ NOTE(Ryan): GPPUD - disable pull up/down
+  str r3, [r1, #0x94]
+  bl delay_150
+
+@ TODO(Ryan): More robust way of handling subroutine variables
+delay_150:
+  mov r9, #0
+  delay_loop:
+    add r9, r9, #1 
+    cmp r9, #150
+    bne delay_loop
+  mov pc, lr
+
+  @ NOTE(Ryan): Read main id register 
   mrc SYSTEM_CONTROL_COPROCESSOR, 0, r0, c0, c0, 0
   lsr r1, r0, #4
   ldr r2, =#0xFFF
   and r1, r2 
+
+  @ We should also set up stack address
+  @ Also enable FPU
+
+  @ read. coprocessor access control register. 
+  @ we enable access rights for coprocessor 10 and 11 in all modes
+  @ then actually enable
+ldr r0, =(0xF << 20)
+mcr p15, 0, r0, c1, c0, 2
+
+  @ NOTE(Ryan): Read multiprocessor affinity register
+  mrc SYSTEM_CONTROL_COPROCESSOR, 0, r0, c0, c0, 5
+  and r0, r0, #0x3
+  cmp r0, #0x0
+  bne halt
+halt:
+  @ NOTE(Ryan): wait-for-event applicable only for multiprocessor environment
+  wfe
+  b halt
    
 
 @ IMPORTANT(Ryan): By default, the linker makes .text section executable - expecting alignment. 
@@ -99,3 +139,5 @@ message:
 @ to indicate version at end:
 @ .org 0xf0
 @ .word 0xdeadbeef
+
+@ vim:ft=armv5
