@@ -4,7 +4,12 @@
 mkdir -p build
 
 # IMPORTANT(Ryan): Must compile with gcc as oppose to as to use the cpp
-arm-none-eabi-gcc -ffreestanding -nostdlib -x assembler-with-cpp -Wl,-eentry -g \
+arm-none-eabi-gcc -ffreestanding -nostdlib -x assembler-with-cpp -Wl,-Tcode/ras.ld -g \
   -mcpu=cortex-a7 code/ras.s -o build/ras.elf
 
 arm-none-eabi-objcopy build/ras.elf -O binary build/kernel7.img
+
+# qemu-system-arm -S -gdb tcp::1234 -machine raspi2 -no-reboot -nographic -serial mon:stdio -kernel build/ras.elf
+# NOTE(Ryan): -serial pty; connect with serial terminal
+
+# arm-none-eabi-gdb -q --nh -ex 'file build/ras.elf' -ex 'target remote localhost:1234'
