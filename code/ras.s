@@ -135,10 +135,55 @@ fiq: bkpt
 @ base addresses inside of linux device tree files.
 @   $(gcc -E -P -I/home/ryan/prog/sources/linux/include \
 @       -x assembler-with-cpp bcm2836-rpi-2-b.dts -o bcm2836.i)
-#define MMIO_BASE 0x3F000000
+@ Once this is done, scroll up from end as includes will typically override
+#define PERIPHERAL_BASE 0x3F000000
 
-#define GPIO_OFFSET 0x200000 
-#define UART0_OFFSET 0x201000
+#define AUX_REGS_BASE 0x3F215000
+#define AUX_REG_IRQ 0x00
+#define AUX_REG_ENABLE 0x04
+#define AUX_REG_MU_IO 0x40
+#define AUX_REG_MU_IER 0x44
+#define AUX_REG_MU_IIR 0x48
+#define AUX_REG_MU_LCR 0x4C
+#define AUX_REG_MU_MCR 0x50
+#define AUX_REG_MU_LSR 0x54
+#define AUX_REG_MU_MSR 0x58
+#define AUX_REG_MU_SCRATCH 0x5C
+#define AUX_REG_MU_CNTL 0x60
+#define AUX_REG_MU_STAT 0x64
+#define AUX_REG_MU_BAUD 0x68
+
+#define GPIO_REGS_BASE 0x3F200000 
+#define GPIO_REG_GPPSEL0 0x00
+#define GPIO_REG_GPFSEL1 0x04
+#define GPIO_REG_GPFSEL2 0x08
+#define GPIO_REG_GPFSEL3 0x0C
+#define GPIO_REG_GPFSEL4 0x10
+#define GPIO_REG_GPFSEL5 0x14
+#define GPIO_REG_GPSET0 0x1C
+#define GPIO_REG_GPSET1 0x20
+#define GPIO_REG_GPCLR0 0x28
+#define GPIO_REG_GPCLR1 0x2C
+#define GPIO_REG_GPLEV0 0x34
+#define GPIO_REG_GPLEV1 0x38
+#define GPIO_REG_GPEDS0 0x40
+#define GPIO_REG_GPEDS1 0x44
+#define GPIO_REG_GPREN0 0x4C
+#define GPIO_REG_GPREN1 0x50
+#define GPIO_REG_GPFEN0 0x58
+#define GPIO_REG_GPFEN1 0x5C
+#define GPIO_REG_GPHEN0 0x64
+#define GPIO_REG_GPHEN1 0x68
+#define GPIO_REG_GPLEN0 0x70
+#define GPIO_REG_GPLEN1 0x74
+#define GPIO_REG_GPAREN0 0x7C
+#define GPIO_REG_GPAREN1 0x80
+#define GPIO_REG_GPAFEN0 0x88
+#define GPIO_REG_GPAFEN1 0x8C
+#define GPIO_REG_GPPUD 0x94
+#define GPIO_REG_GPPUDCLK0 0x98
+#define GPIO_REG_GPPUDCLK1 0x9C
+
 
 .section .text
 main:
@@ -328,9 +373,14 @@ array_len: (. - array) / 4
 @ {} is optional. <condition> can be EQ. <operand> means various addressing modes possible
 @ if instruction suffixed with 's', e.g. adds ; condition flags set 
 
-@ IMPORTANT(Ryan): All instructions are conditional, e.g. suffixed with condition like:
+@ IMPORTANT(Ryan): All instructions in ARM are conditional, e.g. suffixed with condition like:
 @ cmp r3, #0
 @ addeq r5, r5, #1
+@ However, in THUMB, cannot fit into 16-bits, so have the 'it' instruction which will
+@ conditional affect the execution of up to the next 4 instructions
+@ it{2,3,4} cond
+@ t == cond
+@ e == inverse-cond
 
 @ TODO(Ryan): How does ring-levels come into play with bare-metal?
 
